@@ -1,7 +1,7 @@
-import readline from "node:readline";
 import { callTool, toolDefinitionsFor } from "./tools.js";
 
 const VERSION = "2025-06-18";
+const DEFAULT_MAX_REQUEST_BYTES = 65_536;
 
 export function createHandler(service) {
   return async (message) => {
@@ -32,13 +32,22 @@ export function createHandler(service) {
 
 export function serve(service, input = process.stdin, output = process.stdout) {
   const handle = createHandler(service);
-  const lines = readline.createInterface({ input, crlfDelay: Infinity });
-  lines.on("line", async (line) => {
+  const maximum = service.config?.maxRequestBytes || DEFAULT_MAX_REQUEST_BYTES;
+  let pending = Buffer.alloc(0);
+  let discardingOversizedLine = false;
+  let queue = Promise.resolve();
+
+  const writeError = (id, code, message) => {
+    output.write(`${JSON.stringify({ jsonrpc: "2.0", id, error: { code, message } })}\n`);
+  };
+
+  const processLine = async (bytes) => {
+    const line = bytes.toString("utf8").replace(/\r$/, "");
     if (!line.trim()) return;
     let message;
     try { message = JSON.parse(line); }
     catch {
-      output.write(`${JSON.stringify({ jsonrpc: "2.0", id: null, error: { code: -32700, message: "Parse error" } })}\n`);
+      writeError(null, -32700, "Parse error");
       return;
     }
     if (message.id === undefined) {
@@ -49,7 +58,37 @@ export function serve(service, input = process.stdin, output = process.stdout) {
       const result = await handle(message);
       output.write(`${JSON.stringify({ jsonrpc: "2.0", id: message.id, result })}\n`);
     } catch (error) {
-      output.write(`${JSON.stringify({ jsonrpc: "2.0", id: message.id, error: { code: error.code || -32603, message: error.message } })}\n`);
+      writeError(message.id, error.code || -32603, error.message);
     }
+  };
+
+  const enqueue = (line) => {
+    queue = queue.then(() => processLine(line), () => processLine(line));
+  };
+
+  input.on("data", (chunk) => {
+    let remaining = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+    while (remaining.length) {
+      const newline = remaining.indexOf(0x0a);
+      const part = newline < 0 ? remaining : remaining.subarray(0, newline);
+      if (!discardingOversizedLine) {
+        if (pending.length + part.length > maximum) {
+          pending = Buffer.alloc(0);
+          discardingOversizedLine = true;
+          writeError(null, -32600, `Request exceeds ${maximum} bytes`);
+        } else {
+          pending = Buffer.concat([pending, part]);
+        }
+      }
+      if (newline < 0) break;
+      if (!discardingOversizedLine) enqueue(pending);
+      pending = Buffer.alloc(0);
+      discardingOversizedLine = false;
+      remaining = remaining.subarray(newline + 1);
+    }
+  });
+
+  input.on("end", () => {
+    if (!discardingOversizedLine && pending.length) enqueue(pending);
   });
 }

@@ -1,5 +1,7 @@
 # Posteo MCP
 
+[![CI](https://github.com/trustworthy-tech/posteo-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/trustworthy-tech/posteo-mcp/actions/workflows/ci.yml)
+
 A deliberately small, local Model Context Protocol server that lets an AI assistant read and organize a Posteo mailbox without gaining the ability to send mail or erase it permanently.
 
 **Current status: security-focused preview.** The offline suite and a real end-to-end MCP → Keychain → TLS → Posteo test pass. Review the source and begin in `read-only` mode while broader mailbox compatibility is tested.
@@ -57,7 +59,7 @@ Security here comes from removing capability and making the remaining behavior v
 | Keychain lookup uses an executable plus argument array, never a shell | Shell injection and secrets in repository config | [`src/config.js`](src/config.js) |
 | Read tools are the only default tools | Accidental mailbox mutation | [`src/tools.js`](src/tools.js) |
 | No SMTP or permanent-delete command | Autonomous sending and irreversible erasure | [`src/mail.js`](src/mail.js), [`src/tools.js`](src/tools.js) |
-| Limits on input, message size, body size, rate, concurrency, and time | Resource exhaustion and excessive disclosure | [`src/config.js`](src/config.js), [`src/mail.js`](src/mail.js) |
+| Limits on MCP request size, tool strings, message size, body size, rate, concurrency, and time | Resource exhaustion and excessive disclosure | [`src/config.js`](src/config.js), [`src/mcp.js`](src/mcp.js), [`src/tools.js`](src/tools.js), [`src/mail.js`](src/mail.js) |
 | Email is labeled as untrusted in server instructions and results | Makes the trust boundary visible to compatible hosts and agents | [`src/mcp.js`](src/mcp.js) |
 | Synthetic offline tests plus opt-in live test | Repeatable checks without routine mailbox access | [`test/`](test/) |
 
@@ -131,7 +133,7 @@ An app password is still a powerful secret: anyone who obtains it can access the
 
 ## Secure setup: clone to first successful tool call
 
-The recommended path uses macOS 13 or newer, Node.js 20 or newer, a Posteo account with 2FA and additional email protection, a dedicated app password, and a trusted local MCP host.
+The recommended path uses macOS with Keychain, Node.js 20 or newer, a Posteo account with 2FA and additional email protection, a dedicated app password, and a trusted local MCP host.
 
 ### 1. Clone and verify—do not install packages
 
@@ -334,6 +336,8 @@ UIDs are scoped to a folder. A UID from one folder must not be used with another
 The server—not merely its documentation—enforces the following:
 
 - Required fields and UID/limit types are validated again at execution time.
+- Unexpected tool arguments and overlong string inputs are rejected before any mailbox connection.
+- Each newline-delimited MCP request is capped at 65,536 bytes by default; an oversized line is discarded without stopping later valid requests.
 - Folder names and credentials cannot inject extra IMAP commands through CR/LF characters.
 - UTF-8 search terms use IMAP literals rather than command interpolation.
 - TLS certificate verification is enabled and TLS versions below 1.2 are rejected.
@@ -414,6 +418,7 @@ Verified on 2026-09-08: syntax and offline tests; MCP initialization; a four-too
 | `POSTEO_DRAFTS_FOLDER` | `Drafts` | Account-specific Drafts folder name |
 | `POSTEO_MAX_MESSAGE_BYTES` | `1048576` | Maximum fetched bytes per message |
 | `POSTEO_MAX_BODY_CHARS` | `100000` | Maximum returned body characters |
+| `POSTEO_MAX_REQUEST_BYTES` | `65536` | Maximum bytes accepted in one MCP JSON-RPC request line |
 | `POSTEO_NETWORK_TIMEOUT_MS` | `15000` | IMAP inactivity timeout |
 | `POSTEO_MAX_OPS_PER_MINUTE` | `30` | Per-process operation limit |
 

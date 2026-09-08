@@ -38,24 +38,42 @@ export function parseMessage(raw) {
   };
 }
 
-const htmlToText = (html) => html
-  .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, "")
-  .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, "")
-  .replace(/<br\s*\/?>/gi, "\n")
-  .replace(/<\/p\s*>/gi, "\n\n")
-  .replace(/<[^>]+>/g, "")
-  .replaceAll("&lt;", "<").replaceAll("&gt;", ">").replaceAll("&amp;", "&")
-  .replaceAll("&quot;", '"').replaceAll("&#39;", "'");
+const htmlToText = (html) => {
+  let text = "";
+  let tag = "";
+  let insideTag = false;
+  let suppressed = "";
+  for (const character of html) {
+    if (!insideTag && character === "<") {
+      insideTag = true;
+      tag = "";
+    } else if (insideTag && character === ">") {
+      insideTag = false;
+      const normalized = tag.trim().toLowerCase();
+      const closing = normalized.startsWith("/");
+      const name = normalized.replace(/^\/\s*/, "").split(/[\s/]/, 1)[0];
+      if (!closing && (name === "script" || name === "style")) suppressed = name;
+      else if (closing && name === suppressed) suppressed = "";
+      else if (!suppressed && name === "br") text += "\n";
+      else if (!suppressed && closing && name === "p") text += "\n\n";
+    } else if (insideTag) {
+      if (tag.length < 1_024) tag += character;
+    } else if (!suppressed) {
+      text += character;
+    }
+  }
+  return text;
+};
 
 const safeBody = (message, maxChars) => {
   const type = message.contentType.toLowerCase();
   let body = message.body;
   if (type.includes("text/html")) body = htmlToText(body);
+  if (type.includes("multipart/")) {
+    body = "[Multipart or attachment content omitted by the dependency-free parser]";
+  }
   if (!type.includes("text/plain") && !type.includes("text/html") && !type.includes("multipart/")) {
     body = "[Non-text message content omitted]";
-  }
-  if (type.includes("multipart/") && /content-disposition:\s*attachment/i.test(body)) {
-    body = "[Multipart or attachment content omitted by the dependency-free parser]";
   }
   return { body: body.slice(0, maxChars), bodyTruncated: body.length > maxChars };
 };

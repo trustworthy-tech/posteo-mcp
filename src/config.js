@@ -1,7 +1,8 @@
 const integer = (name, fallback) => {
   const raw = process.env[name];
   if (raw === undefined) return fallback;
-  const value = Number.parseInt(raw, 10);
+  if (!/^[1-9]\d*$/.test(raw)) throw new Error(`${name} must be a positive integer`);
+  const value = Number(raw);
   if (!Number.isSafeInteger(value) || value <= 0) {
     throw new Error(`${name} must be a positive integer`);
   }
@@ -26,6 +27,7 @@ export function loadConfig() {
     draftsFolder: process.env.POSTEO_DRAFTS_FOLDER || "Drafts",
     maxMessageBytes: integer("POSTEO_MAX_MESSAGE_BYTES", 1_048_576),
     maxBodyChars: integer("POSTEO_MAX_BODY_CHARS", 100_000),
+    maxRequestBytes: integer("POSTEO_MAX_REQUEST_BYTES", 65_536),
     networkTimeoutMs: integer("POSTEO_NETWORK_TIMEOUT_MS", 15_000),
     maxOpsPerMinute: integer("POSTEO_MAX_OPS_PER_MINUTE", 30),
     mode,
