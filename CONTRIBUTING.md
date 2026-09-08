@@ -9,6 +9,7 @@ Thank you for helping improve Posteo MCP. Bug reports, threat-model challenges, 
 3. Preserve the hard boundaries: read-only by default, no sending, no permanent deletion, fixed Posteo TLS destination, bounded outputs, and no telemetry.
 4. Add tests without real credentials or private mailbox content.
 5. Run `npm run check`.
+6. Run the project-local `posteo-pre-main-review` skill in a clean-context subagent and include its result in the pull request.
 
 ## Pull-request process
 
@@ -19,6 +20,7 @@ Thank you for helping improve Posteo MCP. Bug reports, threat-model challenges, 
 - Approvals become stale when the diff changes and must be repeated.
 - Force pushes and branch deletion are blocked on `main`.
 - A repository administrator can use a PR-only bypass for owner-authored maintenance; command-line bypass is not allowed.
+- A passing independent review is required before merge. The reviewer must not inherit the implementation discussion, and the exact platform-generated commit metadata must be checked again after merge.
 
 Review is not a guarantee that a change is risk-free. Security-sensitive changes may require additional tests, a smaller scope, or rejection when they weaken the project's explicit safety boundary.
 

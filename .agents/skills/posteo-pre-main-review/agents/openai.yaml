@@ -1,0 +1,4 @@
+interface:
+  display_name: "Posteo Pre-Main Review"
+  short_description: "Independently audit Posteo MCP changes before main"
+  default_prompt: "Use $posteo-pre-main-review to independently audit the proposed Posteo MCP change before it reaches main."
