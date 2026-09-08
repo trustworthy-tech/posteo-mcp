@@ -104,6 +104,29 @@ The final `-w` makes the system utility prompt for the secret, keeping it out of
 
 Do not paste the password into this repository, an AI chat, `config.toml`, or a command-line argument.
 
+Verify the entry without printing its password:
+
+```sh
+/usr/bin/security find-generic-password -a "you@posteo.de" -s "posteo-mcp"
+```
+
+A successful result must show an `acct` value that exactly matches the Posteo login address. Watch for typographic quotes (`“` and `”`), trailing spaces, or a mistyped address: all become literal Keychain account characters and prevent lookup.
+
+If verification fails, add a corrected entry using the address without quotes (email addresses contain no spaces):
+
+```sh
+/usr/bin/security add-generic-password -U -a you@posteo.de -s posteo-mcp -w
+/usr/bin/security find-generic-password -a you@posteo.de -s posteo-mcp
+```
+
+Only after the exact entry verifies and a read-only live test passes, remove malformed duplicates. The safest method is **Keychain Access → search `posteo-mcp` → inspect Account → delete only the mismatched item**. To remove a known malformed entry from Terminal, supply its exact account value:
+
+```sh
+/usr/bin/security delete-generic-password -a 'EXACT_MALFORMED_ACCOUNT_VALUE' -s posteo-mcp
+```
+
+Never use a service-only delete while duplicates exist; it may remove the correct entry.
+
 ### 3. Test the server in read-only mode
 
 ```sh
@@ -276,6 +299,8 @@ The IMAP host and port are intentionally not configurable.
 ```sh
 /usr/bin/security delete-generic-password -a "you@posteo.de" -s "posteo-mcp"
 ```
+
+Always include both `-a` and `-s` so the deletion targets one exact account/service pair.
 
 4. Review mailbox activity and moved/deleted messages in Posteo.
 5. Change the primary password if there is any reason to believe it—not only the app password—was exposed.
