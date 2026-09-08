@@ -33,6 +33,34 @@ test("fetched HTML bodies are converted to bounded text", async () => {
   assert.doesNotMatch(message.body, /bad|<p>/);
 });
 
+test("multipart bodies are omitted instead of exposing raw attachments", async () => {
+  const raw = "Content-Type: multipart/mixed; boundary=example\r\n\r\n--example\r\nContent-Type: application/octet-stream\r\n\r\nSECRET_ATTACHMENT_DATA";
+  let calls = 0;
+  const service = new MailService({ maxBodyChars: 1_000, maxMessageBytes: 10_000 }, async (_config, action) => action({
+    command: async () => ++calls === 1
+      ? [{ text: "A0001 OK" }]
+      : [{ text: `* 1 FETCH (UID 8 RFC822.SIZE ${raw.length} {${raw.length}})`, literal: Buffer.from(raw) }, { text: "A0002 OK" }],
+  }));
+  const message = await service.get("INBOX", 8);
+  assert.match(message.body, /omitted/);
+  assert.doesNotMatch(message.body, /SECRET_ATTACHMENT_DATA/);
+});
+
+test("header-only listing uses BODY.PEEK so reading metadata does not mark mail seen", async () => {
+  const commands = [];
+  const service = new MailService({}, async (_config, action) => action({
+    command: async (command, args) => {
+      commands.push([command, args]);
+      if (command === "UID SEARCH") return [{ text: "* SEARCH 42" }, { text: "A0002 OK" }];
+      if (command === "UID FETCH") return [{ text: "* 1 FETCH (UID 42 FLAGS () RFC822.SIZE 12 {12})", literal: Buffer.from("Subject: Hi\r\n") }, { text: "A0003 OK" }];
+      return [{ text: "A0001 OK" }];
+    },
+  }));
+  await service.list("INBOX", 1, false);
+  const fetch = commands.find(([command]) => command === "UID FETCH");
+  assert.match(fetch[1][1], /BODY\.PEEK/);
+});
+
 test("service rate limit rejects excess operations before connecting", async () => {
   let connections = 0;
   const service = new MailService({ maxOpsPerMinute: 1 }, async (_config, action) => {

@@ -51,11 +51,11 @@ const safeBody = (message, maxChars) => {
   const type = message.contentType.toLowerCase();
   let body = message.body;
   if (type.includes("text/html")) body = htmlToText(body);
+  if (type.includes("multipart/")) {
+    body = "[Multipart or attachment content omitted by the dependency-free parser]";
+  }
   if (!type.includes("text/plain") && !type.includes("text/html") && !type.includes("multipart/")) {
     body = "[Non-text message content omitted]";
-  }
-  if (type.includes("multipart/") && /content-disposition:\s*attachment/i.test(body)) {
-    body = "[Multipart or attachment content omitted by the dependency-free parser]";
   }
   return { body: body.slice(0, maxChars), bodyTruncated: body.length > maxChars };
 };
