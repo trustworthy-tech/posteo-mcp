@@ -2,7 +2,7 @@
 
 A deliberately small, local Model Context Protocol server that lets an AI assistant read and organize a Posteo mailbox without gaining the ability to send mail or erase it permanently.
 
-**Current status: security-focused preview.** The offline tests pass, but the server has not yet completed its first live Posteo integration test. Review the source and begin in `read-only` mode.
+**Current status: security-focused preview.** The offline suite and the first read-only live Posteo integration test pass. Review the source and begin in `read-only` mode while broader mailbox compatibility is tested.
 
 ## The short security answer
 
@@ -247,6 +247,8 @@ npm run test:integration
 ```
 
 Run the first live test against a disposable or low-risk mailbox. After it passes, manually verify folder names before enabling `manage`; localized accounts may require `POSTEO_TRASH_FOLDER` and `POSTEO_DRAFTS_FOLDER` overrides.
+
+Verified on 2026-09-08: macOS Keychain credential retrieval, certificate-verified TLS authentication to Posteo, and read-only folder listing. The test did not fetch message content or change the mailbox.
 
 ## Configuration reference
 
