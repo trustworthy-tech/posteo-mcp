@@ -313,6 +313,12 @@ Always include both `-a` and `-s` so the deletion targets one exact account/serv
 - [Codex MCP configuration](https://developers.openai.com/codex/mcp)
 - [Posteo app passwords](https://posteo.de/en/help/app-passwords)
 
+## Contributing and security reports
+
+Pull requests are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) before proposing a change. Every change to `main` requires review from the repository owner through [CODEOWNERS](.github/CODEOWNERS), and the protected-branch policy prevents direct or force pushes.
+
+Report vulnerabilities according to [SECURITY.md](SECURITY.md). Never put credentials or private email content in an issue, pull request, test, or log.
+
 ## License
 
 [MIT](LICENSE)

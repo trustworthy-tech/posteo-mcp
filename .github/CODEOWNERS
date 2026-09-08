@@ -1,0 +1,6 @@
+# Every change requires review from the repository owner.
+* @trustworthy-tech
+
+# Explicitly protect ownership and security-policy changes as well.
+/.github/ @trustworthy-tech
+/SECURITY.md @trustworthy-tech
