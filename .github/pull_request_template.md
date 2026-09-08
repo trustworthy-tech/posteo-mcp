@@ -12,7 +12,13 @@
 - [ ] New or changed behavior has tests.
 - [ ] `npm run check` passes locally.
 - [ ] Documentation reflects any changed capability or risk.
+- [ ] A clean-context subagent ran `posteo-pre-main-review` against this exact revision and returned `PASS`.
+- [ ] The planned merge method preserves a GitHub noreply author and committer identity.
 
 ## Testing evidence
 
 <!-- Paste concise results. Never include credentials or private email content. -->
+
+## Independent review
+
+<!-- Record the reviewed base/head revisions, PASS or BLOCKED result, and residual limitations. Re-run after every diff change. -->

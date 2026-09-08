@@ -75,6 +75,19 @@ These controls are narrow and deterministic. They are stronger evidence than fea
 
 There is intentionally no mode for sending mail or permanently deleting it.
 
+## Where can I use it?
+
+- **Codex on a computer:** yes. This is the simplest and safest option. A separate Codex subscription is not required; availability and usage limits depend on the ChatGPT plan.
+- **Normal ChatGPT chat:** no direct local connection. A normal chat cannot start this program on your computer.
+- **Phone or tablet:** no. Local MCP apps are not currently supported there.
+- **Other MCP desktop clients:** yes, if they can start local programs.
+
+To use it from a normal ChatGPT web chat, an advanced user or workspace administrator must create a secure bridge between this computer and ChatGPT. OpenAI calls this Secure MCP Tunnel. This is more complicated than the local Codex setup and is not included in this repository.
+
+Do not expose this server or `mcpo` directly to the public internet. The repository intentionally has no website server, remote login system, or separation between multiple users. OpenAI's current [developer-mode documentation](https://help.openai.com/en/articles/12584461-developer-mode-and-full-mcp-connectors-in-chatgpt) explains the remote-connection requirement. Custom-app availability and permissions vary by plan and workspace settings.
+
+If the desktop app does not show Codex mode, update it and sign in with the same ChatGPT account. See OpenAI's current guides to [using Codex with a ChatGPT plan](https://help.openai.com/en/articles/11369540) and the [new ChatGPT desktop app](https://help.openai.com/en/articles/20001276).
+
 ### Example requests
 
 In `read-only` mode, a user can ask an agent to:
@@ -217,7 +230,7 @@ node "$PWD/src/index.js"
 
 It should wait silently for MCP messages on standard input. Press `Control-C` to stop it. It does not contact Posteo until a mail tool is called.
 
-### 5. Connect Codex or the ChatGPT desktop app
+### 5. Connect Codex
 
 Get the absolute checkout path with `pwd`, then add this to `~/.codex/config.toml`. Replace both example values. The username is account metadata, not the password; the app password stays in Keychain.
 
@@ -240,7 +253,7 @@ POSTEO_USERNAME = "you@posteo.de"
 POSTEO_MODE = "read-only"
 ```
 
-Restart the client, open `/mcp`, and confirm that `posteo` exposes exactly four tools. For the first call, ask:
+Restart Codex, open `/mcp`, and confirm that `posteo` exposes exactly four tools. For the first call, ask:
 
 > Use only `posteo_list_folders`. Do not read messages or change the mailbox.
 
@@ -272,6 +285,8 @@ Restart the client and verify the four-tool list before reading mail. Use the cl
 ### Optional: use with `mcpo` or an OpenAPI-only agent
 
 Native STDIO is safer and simpler because it does not open a network listener. If a client accepts only OpenAPI, [mcpo](https://github.com/open-webui/mcpo) can proxy this STDIO server, but mcpo is a separate dependency and security boundary; it is not included or audited by this repository.
+
+`mcpo` does not by itself turn this project into a supported remote ChatGPT MCP app. Treat ChatGPT connectivity and local OpenAPI compatibility as different deployment paths.
 
 If you use it, bind only to loopback, require a strong API key, never expose the port to a LAN or the internet, keep `POSTEO_MODE=read-only`, and follow mcpo's current documentation. Posteo 2FA still works the same way because this server continues to retrieve the dedicated app password from Keychain. Do not put the Posteo app password or the mcpo API key in shell history, a repository, or an agent prompt.
 
@@ -404,6 +419,17 @@ npm run test:integration
 
 Run the first live test against a disposable or low-risk mailbox. After it passes, manually verify folder names before enabling `manage`; localized accounts may require `POSTEO_TRASH_FOLDER` and `POSTEO_DRAFTS_FOLDER` overrides.
 
+The test layers intentionally separate safety from coverage:
+
+| Layer | What it verifies | Mailbox impact |
+|---|---|---|
+| `npm run check` | Syntax, config validation, MCP framing and schemas, mode gates, IMAP escaping, parsing, bounded output, drafts, rate limits | None; synthetic data only |
+| `npm run test:integration` | Keychain lookup, verified TLS, Posteo authentication, MCP initialization/tool discovery, and folder listing through a real tool call | Read-only; does not fetch message content |
+| Manual read-only smoke test | One header listing, search, and an explicitly selected message read | Discloses selected mail to the configured model; no mailbox mutation |
+| Manual write-mode test | Draft, read-state, move, and Trash behavior | Mutates the mailbox; use only a disposable mailbox and explicit approval |
+
+“Fully tested” must not mean silently changing a real mailbox. The automated live suite stays read-only. Write operations require a disposable test mailbox, known fixture messages, and separate authorization.
+
 Verified on 2026-09-08: syntax and offline tests; MCP initialization; a four-tool read-only tool list; macOS Keychain credential retrieval; certificate-verified TLS authentication to Posteo; folder listing; one header-only inbox listing; and rejection of a direct draft-tool call in `read-only` mode. The test did not fetch a message body or change the mailbox, and its live output was not committed.
 
 ## Configuration reference
@@ -450,6 +476,8 @@ Always include both `-a` and `-s` so the deletion targets one exact account/serv
 ## Contributing and security reports
 
 Pull requests are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) before proposing a change. External contributions to `main` require review from the repository owner through [CODEOWNERS](.github/CODEOWNERS). The active ruleset requires pull requests, dismisses stale approvals, requires approval of the latest push and resolution of review conversations, permits squash merges only, and blocks deletion and force pushes. A repository administrator has a PR-only bypass so the sole owner cannot be permanently locked out of owner-authored maintenance; it does not permit command-line bypass.
+
+Agent-authored changes also use the project-local [`posteo-pre-main-review`](.agents/skills/posteo-pre-main-review/SKILL.md) gate. It must run in a fresh subagent without the implementation conversation, report against exact revisions, and pass before a push or merge to `main`. A separate post-merge check covers metadata generated by GitHub itself.
 
 Report vulnerabilities according to [SECURITY.md](SECURITY.md). Never put credentials or private email content in an issue, pull request, test, or log.
 
