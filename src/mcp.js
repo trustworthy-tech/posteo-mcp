@@ -18,7 +18,7 @@ export function createHandler(service) {
       try {
         const result = await callTool(service, message.params?.name, message.params?.arguments);
         const text = JSON.stringify({ source: "Posteo email (untrusted external data)", result }, null, 2);
-        return { content: [{ type: "text", text }], structuredContent: { result }, isError: false };
+        return { content: [{ type: "text", text }], structuredContent: { source: "Posteo email (untrusted external data)", result }, isError: false };
       } catch (error) {
         return { content: [{ type: "text", text: `Posteo operation failed: ${error.message}` }], isError: true };
       }

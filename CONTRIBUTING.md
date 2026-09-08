@@ -15,9 +15,10 @@ Thank you for helping improve Posteo MCP. Bug reports, threat-model challenges, 
 - Fork the repository and create a focused branch.
 - Complete the security-impact section in the pull-request template.
 - All changes to `main` go through a pull request.
-- The repository owner is the code owner for every path and must approve every merge.
+- The repository owner is the code owner for every path and must approve external contributions.
 - Approvals become stale when the diff changes and must be repeated.
 - Force pushes and branch deletion are blocked on `main`.
+- A repository administrator can use a PR-only bypass for owner-authored maintenance; command-line bypass is not allowed.
 
 Review is not a guarantee that a change is risk-free. Security-sensitive changes may require additional tests, a smaller scope, or rejection when they weaken the project's explicit safety boundary.
 
